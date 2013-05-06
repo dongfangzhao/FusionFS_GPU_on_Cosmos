@@ -1,0 +1,78 @@
+
+fusion_init()
+
+fusion_opendir(path="/", fi=0x9d43dc10)
+    fusion_fullpath:  rootdir = "/home/dzhao/fusionfs/fusion_root", path = "/", fpath = "/home/dzhao/fusionfs/fusion_root/"
+    flags = 0x00008800
+    fh_old = 0x00000000
+    writepage = 0
+    direct_io = 0
+    keep_cache = 0
+    fh = 0x00007f5390000b20
+    lock_owner = 0x0000000000000000
+
+fusion_getattr(path="/", statbuf=0x9dc3ebf0)
+    fusion_fullpath:  rootdir = "/home/dzhao/fusionfs/fusion_root", path = "/", fpath = "/home/dzhao/fusionfs/fusion_root/"
+
+ ===========CSHOU debug: _getattr() the local IP got: 192.168.1.13 
+
+
+ ===========DFZ debug: _getattr() zht_lookup() =  . 
+
+
+ ===========DFZ debug: _getattr() /home/dzhao/fusionfs/fusion_root/ exists in local. 
+
+    st_dev = 2051
+    st_ino = 18874436
+    st_mode = 040755
+    st_nlink = 2
+    st_uid = 1006
+    st_gid = 100
+    st_rdev = 0
+    st_size = 4096
+    st_blksize = 4096
+    st_blocks = 8
+    st_atime = 0x51875322
+    st_mtime = 0x51874fa8
+    st_ctime = 0x51874fa8
+
+fusion_opendir(path="/", fi=0x9d43dc10)
+    fusion_fullpath:  rootdir = "/home/dzhao/fusionfs/fusion_root", path = "/", fpath = "/home/dzhao/fusionfs/fusion_root/"
+    flags = 0x00098800
+    fh_old = 0x00000000
+    writepage = 0
+    direct_io = 0
+    keep_cache = 0
+    fh = 0x00007f5390008c60
+    lock_owner = 0x0000000000000000
+
+fusion_readdir(path="/", buf=0x90000a10, filler=0x9f489cb0, offset=0, fi=0x9dc3ec00)
+    fusion_fullpath:  rootdir = "/home/dzhao/fusionfs/fusion_root", path = "/", fpath = "/home/dzhao/fusionfs/fusion_root/"
+
+ ===========DFZ debug: fusion_readdir() filelist =  . 
+
+    flags = 0x00000000
+    fh_old = 0x7f5390008c60
+    writepage = 0
+    direct_io = 0
+    keep_cache = 0
+    fh = 0x00007f5390008c60
+    lock_owner = 0x0000000000000000
+
+fusion_releasedir(path="/", fi=0x9d43dc10)
+    flags = 0x00000000
+    fh_old = 0x7f5390008c60
+    writepage = 0
+    direct_io = 0
+    keep_cache = 0
+    fh = 0x00007f5390008c60
+    lock_owner = 0x0000000000000000
+
+fusion_releasedir(path="/", fi=0x9dc3ec10)
+    flags = 0x00000000
+    fh_old = 0x7f5390000b20
+    writepage = 0
+    direct_io = 0
+    keep_cache = 0
+    fh = 0x00007f5390000b20
+    lock_owner = 0x0000000000000000
