@@ -2,4 +2,4 @@
 
 rm -rf /home/dzhao/fusionfs/fusion_root/*
 
-fusermount -u fusion_mount
+fusermount -u /home/dzhao/fusionfs/fusion_mount

@@ -13,8 +13,8 @@ http://www.cs.utk.edu/~plank/plank/papers/CS-08-627.html to obtain a
 copy of Jerasure.
 
 To build the GPU version, two environment variables need to be passed:
-- CUDA_INC_DIR: This contains the CUDA include files.
-- CUDA_LIB_DIR: This contains the CUDA library files.
+- CUDA_INC_PATH: This contains the CUDA include files.
+- CUDA_LIB_PATH: This contains the CUDA library files.
 
 To run the GPU version, two environment variables have to be defined:
 

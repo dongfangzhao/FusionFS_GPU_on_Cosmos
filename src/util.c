@@ -1,4 +1,5 @@
 /**
+ * DFZ, 05/06/2013: net_getmyip() updated to return the first valid address (instead of the last one)
  * DFZ, 08/08/2012: updated with serialization interface
  *
  * DFZ, 07/14/2012: change zht_lookup() interface

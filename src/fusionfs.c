@@ -4,6 +4,8 @@
  * Author: dongfang@ieee.org
  *
  * Update history:
+ *	05/06/2013:
+ *		- GPU erasure coding added for redundancy
  * 	07/19/2012:
  * 		- A major change on design: fusion_create() always create file on local node
  * 	07/17/2012:
@@ -965,37 +967,6 @@ int fusion_release(const char *path, struct fuse_file_info *fi)
 	// (buffers etc) we'd need to free them here as well.
 	retstat = close(fi->fh);
 
-	/*DFZ: begin of erasue coding
-	int n = 3, m = 2;
-	log_msg("before declaring gib_context gc. \n");
-	gib_context gc;
-	log_msg("before calling gib_init(). \n");
-	int rc = gib_init(n, m, &gc);
-	log_msg("after calling gib_init(). \n");
-
-	
-	if (rc)
-	{
-		log_msg("gib_init error. \n");
-		exit (1);
-	}
-	
-	int max_size = 1024 * 1024;
-	void *data;
-	gib_alloc(&data, max_size, &max_size, gc);
-	gib_generate(data, max_size, gc);
-	// TODO: send n buffers out to n remote nodes
-	gib_free(data, gc);
-	gib_destroy(gc);
-	*/
-	/*DFZ: end of erasure coding*/
-
-	char nodeaddr[PATH_MAX] = {0};
-	zht_lookup(path, nodeaddr);
-
-	if (!strcmp(myip, nodeaddr)) {
-		return retstat;
-	}
 
 	/*dealing with the remote copy*/
 	if (iswritten) { /*so it's a write mode*/
@@ -1005,6 +976,98 @@ int fusion_release(const char *path, struct fuse_file_info *fi)
 		if (ZHT_LOOKUP_FAIL == stat) {
 			unlink(fpath);
 			return 0;
+		}
+
+		/*DFZ: test GPU erasure */
+
+		/*update m to be the number of (redundant) parities*/
+		int ida_on = 1, m = 3, n = 8 - m; /*assuming we use all 8 available Cosmos nodes*/
+		if (ida_on)
+		{
+			log_msg("start testing GPU erasure.\n");
+			gib_context gc;
+			long bs = 1024 * 1024; /* block size */
+
+			/*read the file into buffer*/
+			FILE *f = fopen(fpath, "r");
+			fseek(f, 0, SEEK_END);
+			long fsize = ftell(f);
+			fseek(f, 0, SEEK_SET);
+			char *string = malloc(fsize + 1);
+			fread(string, fsize, 1, f);
+			fclose(f);
+			string[fsize] = 0;
+
+			log_msg("before git_init(). \n");
+			if (n >= 2 && (n + m) <= 8) /*Gibraltar lib requires both n and m larger than 2; Cosmos has 8 GPU nodes available*/
+			{
+				int rc = gib_init(m, n, &gc);
+				log_msg("after git_init(). \n");
+				if (rc)
+				{
+					log_msg("error in gib_init().\n");
+				}
+				void *data;
+				gib_alloc(&data, bs, &bs, gc);
+				memcpy(data, string, fsize);
+				gib_generate(data, bs, gc);
+
+				/*send data chunks to n+m-1 nodes*/
+				int i = 0;
+				for (i = 0; i < n + m; i++)
+				{
+					char suffix[16] = {0};
+					sprintf(suffix, "%d", i);
+					char new_filename[256] = {0};
+					strcpy(new_filename, fpath);
+					strcat(new_filename, suffix); 
+
+					FILE *fh = fopen(new_filename, "w");
+					fwrite(i * bs + data, 1, bs, fh);
+					fclose(fh);
+
+					/*send out all new_filename to n+m-1 nodes*/
+					if (!i) continue; /* don't worry about the first chunk */
+
+					char member[16] = {0};
+					member[0] = 'p';
+					char idx[2] = {0};
+					sprintf(idx, "%d", i + 3); /*Cosmos node starts from p3*/
+					strcat(member, idx);
+					ffs_sendfile_c("udt", member, "9000", new_filename, new_filename);
+				}
+
+				/*DFZ: test only. To recover the failed parity
+				char buff_id[256] = {'1'};
+				gib_recover(data, bs, buff_id, m, gc);
+				*/
+				gib_free(data, gc);
+				gib_destroy(gc);
+				log_msg("GPU erasure successful. \n");
+
+			}
+		}
+		/*traditinal data replication*/
+		else
+		{
+			int i = 0;
+			for (i = 0; i < m; i++)
+			{
+				char member[16] = {0};
+				member[0] = 'p';
+				char idx[2] = {0};
+				sprintf(idx, "%d", i + 4); /*primary copy on p3, replicas on p4-p10*/
+				strcat(member, idx);
+				ffs_sendfile_c("udt", member, "9000", fpath, fpath);
+			}
+		}
+		/*DFZ: end of GPU erasure test*/
+
+		char nodeaddr[PATH_MAX] = {0};
+		zht_lookup(path, nodeaddr);
+
+		if (!strcmp(myip, nodeaddr)) {
+			return retstat;
 		}
 
 		/*update this file's node value in ZHT*/
@@ -1677,7 +1740,7 @@ int main(int argc, char *argv[]) {
 	/*DFZ: add root dir in ZHT*/
 	zht_insert("/", " ");
 
-	/*DFZ: test GPU erasure*/
+	/*DFZ: test GPU erasure
 	printf("start testing GPU erasure.\n");
 	gib_context gc;
 	int m = 2, n = 2;
@@ -1688,13 +1751,15 @@ int main(int argc, char *argv[]) {
 		exit (1);
 	}
 	int bs = 1024 * 1024;
-	void *data;
+	void *data, *dense_data;
 	gib_alloc(&data, bs, &bs, gc);
 	gib_generate(data, bs, gc);
+	char buff_id[256] = {'1'};
+	gib_recover(data, bs, buff_id, m, gc);
 	gib_free(data, gc);
 	gib_destroy(gc);
 	printf("GPU erasure successful. \n");
-	/*DFZ: end of GPU erasure test*/
+	DFZ: end of GPU erasure test*/
 
 	fprintf(stderr, "about to call fuse_main\n");
 	fuse_stat = fuse_main(argc, argv, &fusion_oper, fusion_data);

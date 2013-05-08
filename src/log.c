@@ -36,7 +36,7 @@ FILE *log_open()
 
 void log_msg(const char *format, ...)
 {
-//    return;
+    return;
     va_list ap;
     va_start(ap, format);
 
